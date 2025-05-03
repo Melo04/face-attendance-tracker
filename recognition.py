@@ -58,8 +58,9 @@ def detect_bouncing_box(frame, dst):
         cv2.rectangle(dst, (x, y), (x + w, y + h), (255, 0, 0), 2)
         cropped_face = frame[y:y+h, x:x+w]
         embedding = generate_embeddings(cropped_face)
-        print("Generated embedding:", embedding[:5])  # Print first 5 elements only
-        search_mongodb(embedding)
+        print("Generated embedding:", embedding[:5])
+        names = search_mongodb(embedding)
+        update_mongodb(names)
 
     return faces
 
@@ -91,11 +92,35 @@ def search_mongodb(query_vector):
             }
         ]
 
+        names = []
         results = list(collection.aggregate(pipeline))
-        print("Query results:")
-        print(results[0]['name'])
+
+        for i in results:
+            print(f"Detected: {i['name']}")
+            names.append(i['name'])
+        return names
 
     except Exception as e:
         print("MongoDB query error:", e)
+
+def update_mongodb(names):
+    try:
+        uri = os.getenv("MONGODB_CONNECTION")
+        client = MongoClient(uri)
+        
+        database = client["hackathon"]
+        collection = database["embedded_person"]
+
+        for name in names:
+            query_filter = {'name': name}
+            update_operation = {'$inc': {'attendance': 1}}
+            result = collection.update_one(query_filter, update_operation, upsert=True)
+            print(f"Updated attendance: {result}")
+
+        client.close()
+    except Exception as e:
+        raise Exception(
+            f"The following error occurred: {e}", e
+        )
 
 capture_video()
