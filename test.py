@@ -10,51 +10,45 @@ load_dotenv()
 mtcnn = MTCNN(image_size=160, margin=20, keep_all=False)
 facenet = InceptionResnetV1(pretrained='vggface2').eval()
 
-def extract_embedding(image_path):
-    image = Image.open(image_path).convert('RGB')
-    face_tensor = mtcnn(image)
-    
-    if face_tensor is not None:
-        face_tensor = face_tensor.unsqueeze(0)
-        with torch.no_grad():
-            embedding = facenet(face_tensor)
-        return embedding.squeeze().tolist()
-    else:
-        print(f"No face detected in {image_path}.")
-        return None
+uri = os.getenv("MONGODB_CONNECTION")
+client = MongoClient(uri)
+database = client["hackathon"]
+collection = database["embedded_person"]
 
-try:
-    uri = os.getenv("MONGODB_CONNECTION")
-    client = MongoClient(uri)
-    
-    database = client["hackathon"]
-    collection = database["embedded_person"]
+def extract_embedding(embedding):
+    with torch.no_grad():
+        embedding = facenet(embedding)
+    return embedding.squeeze().tolist()
 
-    embedding_2 = extract_embedding('./members/IMG_20250503_165057.jpg')
-    if embedding_2:
-        query_vector = embedding_2
 
-        pipeline = [
-            {
-                "$vectorSearch": {
-                    "queryVector": query_vector,
-                    "path": "embeddings",
-                    "numCandidates": 100,
-                    "limit": 1,
-                    "index": "face_vector_index"
+def run_capture(embedding_2):
+    try:
+        # embedding_2 = extract_embedding(embedding)
+        if embedding_2:
+            query_vector = embedding_2
+
+            pipeline = [
+                {
+                    "$vectorSearch": {
+                        "queryVector": query_vector,
+                        "path": "embeddings",
+                        "numCandidates": 100,
+                        "limit": 1,
+                        "index": "face_vector_index"
+                    }
                 }
-            }
-        ]
+            ]
 
-        results = list(collection.aggregate(pipeline))
-        
-        print(f"Query results for the new image:")
-        for result in results:
-            print(result)
+            results = list(collection.aggregate(pipeline))
+            
+            print(f"Query results for the new image:")
+            # for result in results:
+            # print(results[0]['name'])
+            return results[0]['name']
 
-    client.close()
+        client.close()
 
-except Exception as e:
-    raise Exception(
-        "The following error occurred: ", e
-    )
+    except Exception as e:
+        raise Exception(
+            "The following error occurred: ", e
+        )
