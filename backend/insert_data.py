@@ -27,8 +27,6 @@ try:
     database = client["hackathon"]
     collection = database["embedded_person"]
 
-    embedding_vector = np.random.rand(128).tolist()
-
     document = {
         "name": "Lee Wei Xuan",
         "embeddings": vector,

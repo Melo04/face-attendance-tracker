@@ -1,3 +1,4 @@
+from io import BytesIO
 import os
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +7,7 @@ from pymongo import MongoClient
 from dotenv import load_dotenv
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
+from PIL import Image
 
 from recognition import capture_video
 
@@ -25,9 +27,10 @@ app.add_middleware(
 )
 
 
-def get_embeddings(image):
+def get_embeddings(image_path):
     mtcnn = MTCNN(image_size=160, margin=20, keep_all=False)
     facenet = InceptionResnetV1(pretrained='vggface2').eval()
+    image = Image.open(image_path).convert('RGB')
     face_tensor = mtcnn(image)
 
     if face_tensor is not None:
@@ -47,9 +50,12 @@ async def post_new_user(file: UploadFile = File(...), name: str = Form(...)):
         
         database = client["hackathon"]
         collection = database["embedded_person"]
-        print(f"getting file: {file}")
-        vector = get_embeddings(file.filename)
-        print(f"getting embeddings: {vector}")
+
+        file_path = os.path.join("images", file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+
+        vector = get_embeddings(file_path)
 
         document = {
             "name": name,

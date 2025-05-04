@@ -1,23 +1,41 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './App.css'
+import Webcam from 'react-webcam'
+
+const videoConstraints = {
+  width: 540,
+  facingMode: "environment"
+};
 
 function AddUser() {
-  const [name, setName] = useState("")
-  const [file, setFile] = useState(null)
+  const webcamRef = useRef(null);
+  const [url, setUrl] = React.useState(null);
 
-    const handleFileChange = (e) => {
-      setFile(e.target.files[0]);
-    };
+  const capturePhoto = React.useCallback(async () => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setUrl(imageSrc);
+  }, [webcamRef]);
 
-  const formSubmit = async () => {
-    if (!file || !name) return;
+  const onUserMedia = (e) => {
+    console.log(e);
+  };
+
+  const [name, setName] = useState("");
+  const [file, setFile] = useState(null);
+
+  const formSubmit = async (e) => {
+    e.preventDefault();
+    if (!url || !name) return;
+
+    const base64Response = await fetch(url);
+    const blob = await base64Response.blob();
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', blob, 'photo.jpg');
     formData.append('name', name);
 
-    console.log(name)
-    console.log(file)
+    console.log('name', name);
+    console.log(file);
 
     try {
       const response = await fetch('http://localhost:8000/user', {
@@ -38,18 +56,27 @@ function AddUser() {
 
   return (
       <>
+      <Webcam
+        ref={webcamRef}
+        audio={true}
+        screenshotFormat="image/jpeg"
+        videoConstraints={videoConstraints}
+        onUserMedia={onUserMedia}
+      />
+      
+      {url && (
+        <div>
+          <img src={url} alt="Screenshot" />
+        </div>
+      )}
+      <button onClick={capturePhoto}>Capture</button>
+      <button onClick={() => setUrl(null)}>Refresh</button>
       <form onSubmit={formSubmit}>
         <div style={{marginBottom: 30, display: "flex", flexDirection: "column", justifyContent: "left", alignItems: "left", gap: 5}}>
           <div style={{fontSize: 20}}>Name</div>
-          <input type="text" onChange={(e) => setName(e)} />
+          <input type="text" onChange={(e) => setName(e.target.value)} />
         </div>
-
-        <div style={{marginBottom: 25, display: "flex", flexDirection: "column", justifyContent: "left", alignItems: "left"}}>
-          <div style={{fontSize: 20}}>upload a picture: </div>
-          <input type="file" accept="image/png, image/jpeg" onChange={(e) => handleFileChange(e)} />
-        </div>
-
-        <button type="submit">Submit</button>
+        <button type="submit">Register</button>
       </form>
     </>
   )
