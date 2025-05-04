@@ -7,6 +7,7 @@ import time
 import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -107,12 +108,14 @@ def update_mongodb(names):
         client = MongoClient(uri)
         
         database = client["hackathon"]
-        collection = database["embedded_person"]
+        collection = database["attendance"]
 
         for name in names:
-            query_filter = {'name': name}
-            update_operation = {'$inc': {'attendance': 1}}
-            result = collection.update_one(query_filter, update_operation, upsert=True)
+            query_filter = {'attendees': name}
+            result = collection.update_one(
+                {"date": datetime.now()},
+                {"$push": {"attendees": name}}
+            )
             print(f"Updated attendance: {result}")
 
         client.close()
