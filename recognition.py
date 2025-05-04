@@ -1,7 +1,5 @@
 import cv2
 import torch
-import numpy as np
-from ultralytics import YOLO
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torchvision.transforms as transforms
 from PIL import Image
@@ -123,4 +121,3 @@ def update_mongodb(names):
             f"The following error occurred: {e}", e
         )
 
-capture_video()

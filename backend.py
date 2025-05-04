@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 
+from recognition import capture_video
+
 load_dotenv()
 app = FastAPI()
 
@@ -76,3 +78,7 @@ async def get_leaderboard():
         raise Exception(
             f"The following error occurred: {e}", e
         )
+
+@app.get("/camera")
+async def get_camera():
+    capture_video()
