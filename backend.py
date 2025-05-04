@@ -1,5 +1,6 @@
 import os
 from fastapi import FastAPI, File, Form, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -10,6 +11,19 @@ from recognition import capture_video
 
 load_dotenv()
 app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 def get_embeddings(image):
     mtcnn = MTCNN(image_size=160, margin=20, keep_all=False)
