@@ -20,7 +20,7 @@ function App() {
     fetch('http://localhost:8000/attendance')
       .then((res) => res.json())
       .then((data) => {
-        setAttendance(data);
+        setAttendance(data.data);
         setLoading(false);
       })
       .catch((err) => {
