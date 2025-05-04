@@ -1,4 +1,3 @@
-import cv2
 import torch
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torchvision.transforms as transforms
@@ -12,18 +11,13 @@ from datetime import datetime
 load_dotenv()
 
 # Setup
-classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 mtcnn = MTCNN(image_size=160, margin=20, keep_all=False)
-facenet = InceptionResnetV1(pretrained='vggface2').eval()
 
 # Connect to MongoDB once
 uri = os.getenv("MONGODB_CONNECTION")
 client = MongoClient(uri)
-db = client["hackathon"]
-collection = db["embedded_person"]
+def capture_video(client, cap, cv2):
 
-def capture_video():
-    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
@@ -36,7 +30,7 @@ def capture_video():
             print("Can't receive frame (stream end?). Exiting ...")
             break
 
-        faces = detect_bouncing_box(frame, dst)
+        faces = detect_bouncing_box(frame, dst, cv2)
         cv2.imshow('face_detection', dst)
 
         if len(faces) > 0:
@@ -49,21 +43,23 @@ def capture_video():
     cv2.destroyAllWindows()
     client.close()
 
-def detect_bouncing_box(frame, dst):
+def detect_bouncing_box(frame, dst, cv2):
+    classifier = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = classifier.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=10, minSize=(80, 80))
 
     for (x, y, w, h) in faces:
         cv2.rectangle(dst, (x, y), (x + w, y + h), (255, 0, 0), 2)
         cropped_face = frame[y:y+h, x:x+w]
-        embedding = generate_embeddings(cropped_face)
+        embedding = generate_embeddings(cropped_face, cv2)
         print("Generated embedding:", embedding[:5])
         names = search_mongodb(embedding)
         update_mongodb(names)
 
     return faces
 
-def generate_embeddings(face_img):
+def generate_embeddings(face_img, cv2):
+    facenet = InceptionResnetV1(pretrained='vggface2').eval()
     transform = transforms.Compose([
         transforms.Resize((160, 160)),
         transforms.ToTensor(),
@@ -78,6 +74,9 @@ def generate_embeddings(face_img):
     return embedding.squeeze(0).tolist()
 
 def search_mongodb(query_vector):
+    db = client["hackathon"]
+    collection = db["embedded_person"]
+
     try:
         pipeline = [
             {
@@ -110,12 +109,23 @@ def update_mongodb(names):
         database = client["hackathon"]
         collection = database["attendance"]
 
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
         for name in names:
             query_filter = {'attendees': name}
             result = collection.update_one(
                 {"date": datetime.now()},
                 {"$push": {"attendees": name}}
             )
+
+            result = collection.update_one(
+            {"date": today},
+            {
+                "$setOnInsert": {"_id": str(today), "date": today},
+                "$addToSet": {"attendees": name}
+            },
+            upsert=True
+        )
             print(f"Updated attendance: {result}")
 
         client.close()
