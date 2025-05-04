@@ -8,11 +8,16 @@ from dotenv import load_dotenv
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 from PIL import Image
+import cv2
 
 from recognition import capture_video
 
 load_dotenv()
 app = FastAPI()
+
+uri = os.getenv("MONGODB_CONNECTION")
+client = MongoClient(uri)
+cap = cv2.VideoCapture(0)
 
 origins = [
     "http://localhost:5173",
@@ -101,4 +106,10 @@ async def get_leaderboard():
 
 @app.get("/camera")
 async def get_camera():
-    capture_video()
+    capture_video(client, cap, cv2)
+
+@app.get("/stop")
+async def stop_camera():
+    cap.release()
+    cv2.destroyAllWindows()
+    client.close()
