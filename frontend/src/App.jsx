@@ -20,6 +20,7 @@ function App() {
     fetch('http://localhost:8000/attendance')
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         setAttendance(data.data);
         setLoading(false);
       })
@@ -27,6 +28,10 @@ function App() {
         console.error('Error fetching attendance:', err);
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    console.log('attendance', attendance);
   }, []);
 
   // useEffect(() => {
@@ -50,34 +55,22 @@ function App() {
 
   return (
     <>
-      <Box p={6}>
-        <Heading size="lg" mb={6}>Attendance Records</Heading>
-        <VStack spacing={6} align="stretch">
-          {attendance.map((record, index) => (
-            <Box
-              key={index}
-              borderWidth="1px"
-              borderRadius="lg"
-              p={5}
-              shadow="md"
-            >
-              <Heading size="md">
-                Date: {new Date(record.date).toLocaleDateString()}
-              </Heading>
-              <List spacing={2} mt={3}>
-                {record.attendees.map((name, idx) => (
-                  <ListItem key={idx} pl={2}>
-                    <Text>- {name}</Text>
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          ))}
-        </VStack>
-      </Box>
+        <div style={{ padding: '1rem' }}>
+            <h1>Attendance Records</h1>
+            {attendance.map((record, index) => (
+                <div key={index} style={{ border: '1px solid black', marginBottom: '1rem', padding: '1rem' }}>
+                    <h3>Date: {new Date(record.date).toLocaleDateString()}</h3>
+                    <ul>
+                        {record.attendees.map((name, idx) => (
+                            <li key={idx}>{name}</li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
 
-      <button onClick={captureVideo}>Start Scanning</button>
-      <button onClick={stopCapture}>Stop Scanning</button>
+            <button onClick={captureVideo}>Start Scanning</button>
+            <button onClick={stopCapture}>Stop Scanning</button>
+        </div>
     </>
   )
 }

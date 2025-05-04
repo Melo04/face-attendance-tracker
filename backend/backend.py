@@ -114,7 +114,7 @@ async def stop_camera():
     cv2.destroyAllWindows()
     client.close()
 
-@app.get("/classes")
+@app.get("/attendance")
 async def get_classes():
     try:
         uri = os.getenv("MONGODB_CONNECTION")
