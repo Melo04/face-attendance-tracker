@@ -15,6 +15,14 @@ function App() {
     fetchList()
   }, [])
 
+  const captureVideo = async () => {
+    await fetch('http://localhost:8000/camera')
+  }
+
+  const stopCapture = async () => {
+    await fetch("http://localhost:8000/stop")
+  }
+
   return (
     <>
       <ul>
@@ -22,6 +30,9 @@ function App() {
           <li key={attendee._id}>{attendee.name}</li>
         ))}
       </ul>
+
+      <button onClick={captureVideo}>Start Scanning</button>
+      <button onClick={stopCapture}>Stop Scanning</button>
     </>
   )
 }

@@ -35,9 +35,8 @@ function AddUser() {
     formData.append('name', name);
 
     console.log('name', name);
-    console.log(file);
+    console.log(url);
 
-    try {
       const response = await fetch('http://localhost:8000/user', {
         method: 'POST',
         body: formData,
@@ -49,9 +48,6 @@ function AddUser() {
       } else {
         alert('Upload failed.');
       }
-    } catch (err) {
-      console.error('Error uploading file:', err);
-    }
   }
 
   return (
