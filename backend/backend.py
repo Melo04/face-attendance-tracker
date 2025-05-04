@@ -113,3 +113,31 @@ async def stop_camera():
     cap.release()
     cv2.destroyAllWindows()
     client.close()
+
+@app.get("/classes")
+async def get_classes():
+    try:
+        uri = os.getenv("MONGODB_CONNECTION")
+        client = MongoClient(uri)
+        
+        database = client["hackathon"]
+        collection = database["attendance"]
+
+        results = collection.find({}, {"_id": 0, "date": 1, "attendees": 1})
+
+        leaderboard = []
+        for doc in results:
+            if "date" in doc and hasattr(doc["date"], "isoformat"):
+                doc["date"] = doc["date"].isoformat()  # Convert datetime to string
+            leaderboard.append(doc)
+
+        client.close()
+
+        return JSONResponse(
+            content={"data": leaderboard},
+            status_code=200
+        )
+    except Exception as e:
+        raise Exception(
+            f"The following error occurred: {e}", e
+        )
